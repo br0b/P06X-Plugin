@@ -16,6 +16,7 @@ using P06X.Helpers;
 using TMPro;
 using System.Xml.Schema;
 using Harmony;
+using System.Linq.Expressions;
 
 namespace P06X
 {
@@ -40,26 +41,27 @@ namespace P06X
                     this._T2_ = x;
                 }, () => this._T2_, XDebug.DebugInt.LogT.OnChange);
             }
+
             new XDebug.DebugFloat("<color=#d214fc>cstm_spd_ground</color>", 1f, 0.05f, KeyCode.Keypad2, KeyCode.Keypad1, delegate (float x)
             {
-                XSingleton<XDebug>.Instance.SMGround.Value = x;
-            }, () => XDebug.CustomSpeedMultiplier.Ground, XDebug.DebugFloat.LogT.OnChange);
+                XSingleton<XDebug>.Instance.SM[CustomSpeedMultiplier.LUASpeedType.Ground].Value = x;
+            }, () => XDebug.CustomSpeedMultiplier.ByType[CustomSpeedMultiplier.LUASpeedType.Ground], DebugFloat.LogT.OnChange);
             new XDebug.DebugFloat("<color=#d214fc>cstm_spd_air</color>", 1f, 0.05f, KeyCode.Keypad5, KeyCode.Keypad4, delegate (float x)
             {
-                XSingleton<XDebug>.Instance.SMAir.Value = x;
-            }, () => XDebug.CustomSpeedMultiplier.Air, XDebug.DebugFloat.LogT.OnChange);
+                XSingleton<XDebug>.Instance.SM[CustomSpeedMultiplier.LUASpeedType.Air].Value = x;
+            }, () => XDebug.CustomSpeedMultiplier.ByType[CustomSpeedMultiplier.LUASpeedType.Air], XDebug.DebugFloat.LogT.OnChange);
             new XDebug.DebugFloat("<color=#d214fc>cstm_spd_spindash</color>", 1f, 0.05f, KeyCode.Keypad8, KeyCode.Keypad7, delegate (float x)
             {
-                XSingleton<XDebug>.Instance.SMSpindash.Value = x;
-            }, () => XDebug.CustomSpeedMultiplier.Spindash, XDebug.DebugFloat.LogT.OnChange);
+                XSingleton<XDebug>.Instance.SM[CustomSpeedMultiplier.LUASpeedType.Spindash].Value = x;
+            }, () => XDebug.CustomSpeedMultiplier.ByType[CustomSpeedMultiplier.LUASpeedType.Spindash], XDebug.DebugFloat.LogT.OnChange);
             new XDebug.DebugFloat("<color=#d214fc>cstm_spd_flying</color>", 1f, 0.05f, KeyCode.Keypad9, KeyCode.Keypad6, delegate (float x)
             {
-                XSingleton<XDebug>.Instance.SMFly.Value = x;
-            }, () => XDebug.CustomSpeedMultiplier.Flying, XDebug.DebugFloat.LogT.OnChange);
+                XSingleton<XDebug>.Instance.SM[CustomSpeedMultiplier.LUASpeedType.Flying].Value = x;
+            }, () => XDebug.CustomSpeedMultiplier.ByType[CustomSpeedMultiplier.LUASpeedType.Flying], XDebug.DebugFloat.LogT.OnChange);
             new XDebug.DebugFloat("<color=#d214fc>cstm_spd_climbing</color>", 1f, 0.05f, KeyCode.Keypad3, KeyCode.KeypadPeriod, delegate (float x)
             {
-                XSingleton<XDebug>.Instance.SMClimb.Value = x;
-            }, () => XDebug.CustomSpeedMultiplier.Climbing, XDebug.DebugFloat.LogT.OnChange);
+                XSingleton<XDebug>.Instance.SM[CustomSpeedMultiplier.LUASpeedType.Climb].Value = x;
+            }, () => XDebug.CustomSpeedMultiplier.ByType[CustomSpeedMultiplier.LUASpeedType.Climb], XDebug.DebugFloat.LogT.OnChange);
             XSingleton<XFiles>.Instance.Load();
             Debug.Log(Singleton<XModMenu>.Instance.name);
             Dictionary<string, object> settingsDict = this.GetSettingsDict();
@@ -527,7 +529,7 @@ namespace P06X
             }
         }
 
-        
+
 
         private void LateUpdate()
         {
@@ -835,48 +837,18 @@ namespace P06X
             {
                 this.Log("Check P-06 Version " + (on ? "<color=#00ee00>enabled</color>" : "<color=#ee0000>disabled</color>"), 1.5f, 16f);
             }, true);
-            this.SMGround = new XValue<float>(delegate (float x)
+
+            foreach (var speedType in EnumUtil.GetValues<CustomSpeedMultiplier.LUASpeedType>())
             {
-                CustomSpeedMultiplier.Ground = x;
-                USING_CUSTOM_SPEEDS = true;
-                CustomSpeedMultiplier.UpdateLUA();
-                this.Log(string.Format("<color=#d214fc>cstm_spd_ground</color> = {0}", x), 1.25f, 16f);
-            }, 1f);
-            this.SMAir = new XValue<float>(delegate (float x)
-            {
-                CustomSpeedMultiplier.Air = x;
-                USING_CUSTOM_SPEEDS = true;
-                CustomSpeedMultiplier.UpdateLUA();
-                this.Log(string.Format("<color=#d214fc>cstm_spd_air</color> = {0}", x), 1.25f, 16f);
-            }, 1f);
-            this.SMSpindash = new XValue<float>(delegate (float x)
-            {
-                CustomSpeedMultiplier.Spindash = x;
-                USING_CUSTOM_SPEEDS = true;
-                CustomSpeedMultiplier.UpdateLUA();
-                this.Log(string.Format("<color=#d214fc>cstm_spd_spindash</color> = {0}", x), 1.25f, 16f);
-            }, 1f);
-            this.SMFly = new XValue<float>(delegate (float x)
-            {
-                CustomSpeedMultiplier.Flying = x;
-                USING_CUSTOM_SPEEDS = true;
-                CustomSpeedMultiplier.UpdateLUA();
-                this.Log(string.Format("<color=#d214fc>cstm_spd_flying</color> = {0}", x), 1.25f, 16f);
-            }, 1f);
-            this.SMClimb = new XValue<float>(delegate (float x)
-            {
-                XDebug.CustomSpeedMultiplier.Climbing = x;
-                XDebug.USING_CUSTOM_SPEEDS = true;
-                CustomSpeedMultiplier.UpdateLUA();
-                this.Log(string.Format("<color=#d214fc>cstm_spd_climbing</color> = {0}", x), 1.25f, 16f);
-            }, 1f);
-            this.SMHoming = new XValue<float>(delegate (float x)
-            {
-                XDebug.CustomSpeedMultiplier.Homing = x;
-                XDebug.USING_CUSTOM_SPEEDS = true;
-                CustomSpeedMultiplier.UpdateLUA();
-                this.Log(string.Format("<color=#d214fc>cstm_spd_homing</color> = {0}", x), 1.25f, 16f);
-            }, 1f);
+                SM[speedType] = new XValue<float>(delegate (float x)
+                {
+                    CustomSpeedMultiplier.ByType[speedType] = x;
+                    USING_CUSTOM_SPEEDS = true;
+                    CustomSpeedMultiplier.UpdateLUA(ASCLuaRecalc.Value);
+                    this.Log(string.Format("<color=#d214fc>cstm_spd_{0}</color> = {1}", speedType.ToString().ToLower(), x), 1.25f, 16f);
+                }, 1f);
+            }
+            
             this.SMHomingAttackFasterBy = new XValue<float>(delegate (float x)
             {
                 XDebug.CustomSpeedMultiplier.HomingAttackTimeShortener = 1f / x;
@@ -892,16 +864,14 @@ namespace P06X
             this.EverySpeedMultiplier = new XValue<float>(delegate (float mul)
             {
                 this.SpeedMultiplier = mul;
-                this.SMGround.Value = mul;
-                this.SMAir.Value = mul;
-                this.SMSpindash.Value = mul;
-                this.SMFly.Value = mul;
-                this.SMClimb.Value = mul;
-                this.SMHoming.Value = mul;
+                foreach (var speedType in EnumUtil.GetValues<CustomSpeedMultiplier.LUASpeedType>())
+                {
+                    SM[speedType].Value = mul;
+                }
                 this.SMHomingAttackFasterBy.Value = mul;
                 this.SMAfterHomingRotation.Value = mul;
                 this.Log(string.Format("<color=#ff9500>Speed Multiplier</color>: {0}", this.SpeedMultiplier.ToString("0.000")), 1.5f, 18f);
-                CustomSpeedMultiplier.UpdateLUA();
+                CustomSpeedMultiplier.UpdateLUA(ASCLuaRecalc.Value);
                 XDebug.USING_CUSTOM_SPEEDS = false;
             }, 1f);
             this.Boost_BaseSpeed = new XValue<float>(delegate (float spd)
@@ -943,7 +913,7 @@ namespace P06X
             }
             this.Log("<color=#ee0000>Section</color> \"" + section + "\" <color=#ee0000>doesn't exist</color>!", 3f, 16f);
         }
-        
+
 
 
         public void LoadSettings()
@@ -1512,17 +1482,18 @@ namespace P06X
 
         public XValue<string> TeleportLocation;
 
-        public XValue<float> SMGround;
+        public ArrayByEnum<CustomSpeedMultiplier.LUASpeedType, XValue<float>> SM;
+        //public XValue<float> SMGround;
 
-        public XValue<float> SMAir;
+        //public XValue<float> SMAir;
 
-        public XValue<float> SMSpindash;
+        //public XValue<float> SMSpindash;
 
-        public XValue<float> SMFly;
+        //public XValue<float> SMFly;
 
-        public XValue<float> SMClimb;
+        //public XValue<float> SMClimb;
 
-        public XValue<float> SMHoming;
+        //public XValue<float> SMHoming;
 
         public XValue<bool> ASCSpinClamp;
 
@@ -1768,78 +1739,79 @@ namespace P06X
 
         public struct CustomSpeedMultiplier
         {
-            public static float Ground = 1f;
+            public enum LUASpeedType { Ground, Air, Spindash, Flying, Climb, Homing }
+            public static ArrayByEnum<LUASpeedType, float> ByType = new ArrayByEnum<LUASpeedType, float>(1f);
+            //public static float Ground = 1f;
 
-            public static float Air = 1f;
+            //public static float Air = 1f;
 
-            public static float Spindash = 1f;
+            //public static float Spindash = 1f;
 
-            public static float Flying = 1f;
+            //public static float Flying = 1f;
 
-            public static float Climbing = 1f;
+            //public static float Climbing = 1f;
 
-            public static float Homing = 1f;
+            //public static float Homing = 1f;
 
             public static float HomingAttackTimeShortener = 1f;
 
             public static float AfterHomingRotationSpeed = 1f;
 
-            public static Dictionary<(string, string), float> OriginalSpeedLUAs = new Dictionary<(string, string), float>();
+            public static Dictionary<(string, string, LUASpeedType), float> OriginalSpeedLUAs = new Dictionary<(string, string, LUASpeedType), float>();
 
-            enum LUASpeedType { Run, Jump, Spindash, Speedup, Flight, Climb, Homing }
             public void InitializeOriginalLUA()
             {
-                var luas = new (string, string)[] {
-                    ("Sonic_New_Lua", "c_run_speed_max"),
-                    ("Sonic_New_Lua", "c_run_speed_max"),
-                    ("Sonic_New_Lua", "c_jump_run"),
-                    ("Sonic_New_Lua", "c_spindash_spd"),
-                    ("Sonic_New_Lua", "c_speedup_speed_max"),
-                    ("Sonic_Fast_Lua", "c_walk_speed_max"),
-                    ("Sonic_Fast_Lua", "c_run_speed_max"),
-                    ("Sonic_Fast_Lua", "c_lightdash_speed"),
-                    ("Sonic_Fast_Lua", "c_lightdash_mid_speed"),
-                    ("Sonic_Fast_Lua", "c_lightdash_mid_speed_super"),
-                    ("Tails_Lua", "c_run_speed_max"),
-                    ("Tails_Lua", "c_jump_run"),
-                    ("Tails_Lua", "c_flight_speed_max"),
-                    ("Tails_Lua", "c_speedup_speed_max"),
-                    ("Shadow_Lua", "c_run_speed_max"),
-                    ("Shadow_Lua", "c_speedup_speed_max"),
-                    ("Shadow_Lua", "c_jump_run"),
-                    ("Shadow_Lua", "c_spindash_spd"),
-                    ("Knuckles_Lua", "c_climb_speed"),
-                    ("Knuckles_Lua", "c_run_speed_max"),
-                    ("Knuckles_Lua", "c_speedup_speed_max"),
-                    ("Knuckles_Lua", "c_jump_run"),
-                    ("Knuckles_Lua", "c_flight_speed_max"),
-                    ("Omega_Lua", "c_run_speed_max"),
-                    ("Omega_Lua", "l_jump_run"),
-                    ("Omega_Lua", "c_speedup_speed_max"),
-                    ("Princess_Lua", "c_run_speed_max"),
-                    ("Princess_Lua", "c_speedup_speed_max"),
-                    ("Princess_Lua", "c_jump_run"),
-                    ("Rouge_Lua", "c_run_speed_max"),
-                    ("Rouge_Lua", "c_speedup_speed_max"),
-                    ("Rouge_Lua", "c_jump_run"),
-                    ("Rouge_Lua", "c_flight_speed_max"),
-                    ("Rouge_Lua", "c_climb_speed"),
-                    ("Silver_Lua", "c_run_speed_max"),
-                    ("Silver_Lua", "c_speedup_speed_max"),
-                    ("Silver_Lua", "c_jump_run"),
-                    ("Silver_Lua", "c_float_walk_speed"),
-                    ("Shadow_Lua", "c_homing_spd"),
-                    ("Sonic_New_Lua", "c_homing_spd"),
-                    ("Princess_Lua", "c_homing_spd")
+                var luas = new (string, string, LUASpeedType)[] {
+                    ("Sonic_New_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Sonic_New_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Sonic_New_Lua", "c_jump_run", LUASpeedType.Air),
+                    ("Sonic_New_Lua", "c_spindash_spd", LUASpeedType.Spindash),
+                    ("Sonic_New_Lua", "c_speedup_speed_max", LUASpeedType.Ground),
+                    ("Sonic_Fast_Lua", "c_walk_speed_max", LUASpeedType.Ground),
+                    ("Sonic_Fast_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Sonic_Fast_Lua", "c_lightdash_speed", LUASpeedType.Air),
+                    ("Sonic_Fast_Lua", "c_lightdash_mid_speed", LUASpeedType.Air),
+                    ("Sonic_Fast_Lua", "c_lightdash_mid_speed_super", LUASpeedType.Air),
+                    ("Tails_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Tails_Lua", "c_jump_run", LUASpeedType.Air),
+                    ("Tails_Lua", "c_flight_speed_max", LUASpeedType.Flying),
+                    ("Tails_Lua", "c_speedup_speed_max", LUASpeedType.Ground),
+                    ("Shadow_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Shadow_Lua", "c_speedup_speed_max", LUASpeedType.Ground),
+                    ("Shadow_Lua", "c_jump_run", LUASpeedType.Air),
+                    ("Shadow_Lua", "c_spindash_spd", LUASpeedType.Spindash),
+                    ("Knuckles_Lua", "c_climb_speed", LUASpeedType.Climb),
+                    ("Knuckles_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Knuckles_Lua", "c_speedup_speed_max", LUASpeedType.Ground),
+                    ("Knuckles_Lua", "c_jump_run", LUASpeedType.Air),
+                    ("Knuckles_Lua", "c_flight_speed_max", LUASpeedType.Flying),
+                    ("Omega_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Omega_Lua", "l_jump_run", LUASpeedType.Air),
+                    ("Omega_Lua", "c_speedup_speed_max", LUASpeedType.Ground),
+                    ("Princess_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Princess_Lua", "c_speedup_speed_max", LUASpeedType.Ground),
+                    ("Princess_Lua", "c_jump_run", LUASpeedType.Air),
+                    ("Rouge_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Rouge_Lua", "c_speedup_speed_max", LUASpeedType.Ground),
+                    ("Rouge_Lua", "c_jump_run", LUASpeedType.Air),
+                    ("Rouge_Lua", "c_flight_speed_max", LUASpeedType.Flying),
+                    ("Rouge_Lua", "c_climb_speed", LUASpeedType.Climb),
+                    ("Silver_Lua", "c_run_speed_max", LUASpeedType.Ground),
+                    ("Silver_Lua", "c_speedup_speed_max", LUASpeedType.Ground),
+                    ("Silver_Lua", "c_jump_run", LUASpeedType.Air),
+                    ("Silver_Lua", "c_float_walk_speed", LUASpeedType.Ground),
+                    ("Shadow_Lua", "c_homing_spd", LUASpeedType.Homing),
+                    ("Sonic_New_Lua", "c_homing_spd", LUASpeedType.Homing),
+                    ("Princess_Lua", "c_homing_spd", LUASpeedType.Homing)
                 };
 
                 OriginalSpeedLUAs.Clear();
                 Assembly ass = Assembly.GetAssembly(typeof(SonicNew));
 
-                foreach (var (character, lua) in luas)
+                foreach (var (character, lua, type) in luas)
                 {
                     var originalValue = ass.GetType("STHLUA." + character).Get<float>(lua);
-                    OriginalSpeedLUAs.Add((character, lua), originalValue);
+                    OriginalSpeedLUAs.Add((character, lua, type), originalValue);
                 }
             }
 
@@ -1848,23 +1820,25 @@ namespace P06X
                 Assembly ass = Assembly.GetAssembly(typeof(SonicNew));
                 foreach (var kv in OriginalSpeedLUAs)
                 {
-                    var (character, lua) = kv.Key;
+                    var (character, lua, _) = kv.Key;
                     var originalValue = kv.Value;
                     ass.GetType("STHLUA." + character).Set<float>(lua, originalValue);
                 }
             }
 
-
-
-            public static void UpdateLUA()
+            public static void UpdateLUA(bool recalc_lua)
             {
                 XDebug.Comment("[pending]");
                 Assembly ass = Assembly.GetAssembly(typeof(SonicNew));
                 foreach (var kv in OriginalSpeedLUAs)
                 {
-                    var (character, lua) = kv.Key;
+                    var (character, lua, speedType) = kv.Key;
                     var originalValue = kv.Value;
-                    ass.GetType("STHLUA." + character).Set<float>(lua, originalValue * XDebug.CustomSpeedMultiplier.Ground);
+                    ass.GetType("STHLUA." + character).Set<float>(lua, originalValue * XDebug.CustomSpeedMultiplier.ByType[speedType]);
+                }
+                if (recalc_lua)
+                {
+                    RecalcLua();
                 }
                 /*
                 this.ResetLUA();
@@ -1909,15 +1883,13 @@ namespace P06X
                 Sonic_New_Lua.c_homing_spd *= XDebug.CustomSpeedMultiplier.Homing;
                 Shadow_Lua.c_homing_spd *= XDebug.CustomSpeedMultiplier.Homing;
                 Princess_Lua.c_homing_spd *= XDebug.CustomSpeedMultiplier.Homing;
-                if (this.ASCLuaRecalc.Value)
-                {
-                    this.RecalcLua();
-                }
                 */
+
             }
 
-            public static void RecalcLua()
+            private static void RecalcLua()
             {
+                
                 /*
                 Sonic_New_Lua.c_run_acc = (Sonic_New_Lua.c_run_speed_max - Sonic_New_Lua.c_walk_speed_max) / Sonic_New_Lua.l_run_acc;
                 Sonic_New_Lua.c_speedup_acc = (Sonic_New_Lua.c_speedup_speed_max - Sonic_New_Lua.c_walk_speed_max) / Sonic_New_Lua.l_speedup_acc;
@@ -3254,12 +3226,12 @@ namespace P06X
             xuisection3.AddItem(new XUIToggleButton("Water immunity", XSingleton<XDebug>.Instance.Cheat_IgnoreWaterDeath));
             xuisection3.AddItem(new XUIToggleButton("Faster Chain Jump", XSingleton<XDebug>.Instance.Cheat_ChainJumpZeroDelay));
             XUISection xuisection4 = this.Menu.AddSection(new XUISection("Advanced Speed Control"));
-            xuisection4.AddItem(new XUIFloatAdjuster("Ground", XSingleton<XDebug>.Instance.SMGround, -0.05f, 0.1f, 3));
-            xuisection4.AddItem(new XUIFloatAdjuster("Air", XSingleton<XDebug>.Instance.SMAir, -0.05f, 0.1f, 3));
-            xuisection4.AddItem(new XUIFloatAdjuster("Spindash", XSingleton<XDebug>.Instance.SMSpindash, -0.05f, 0.1f, 3));
-            xuisection4.AddItem(new XUIFloatAdjuster("Flying", XSingleton<XDebug>.Instance.SMFly, -0.05f, 0.1f, 3));
-            xuisection4.AddItem(new XUIFloatAdjuster("Climbing", XSingleton<XDebug>.Instance.SMClimb, -0.05f, 0.1f, 3));
-            xuisection4.AddItem(new XUIFloatAdjuster("Homing", XSingleton<XDebug>.Instance.SMHoming, -0.05f, 0.1f, 3));
+            xuisection4.AddItem(new XUIFloatAdjuster("Ground", XSingleton<XDebug>.Instance.SM[XDebug.CustomSpeedMultiplier.LUASpeedType.Ground], -0.05f, 0.1f, 3));
+            xuisection4.AddItem(new XUIFloatAdjuster("Air", XSingleton<XDebug>.Instance.SM[XDebug.CustomSpeedMultiplier.LUASpeedType.Air], -0.05f, 0.1f, 3));
+            xuisection4.AddItem(new XUIFloatAdjuster("Spindash", XSingleton<XDebug>.Instance.SM[XDebug.CustomSpeedMultiplier.LUASpeedType.Spindash], -0.05f, 0.1f, 3));
+            xuisection4.AddItem(new XUIFloatAdjuster("Flying", XSingleton<XDebug>.Instance.SM[XDebug.CustomSpeedMultiplier.LUASpeedType.Flying], -0.05f, 0.1f, 3));
+            xuisection4.AddItem(new XUIFloatAdjuster("Climbing", XSingleton<XDebug>.Instance.SM[XDebug.CustomSpeedMultiplier.LUASpeedType.Climb], -0.05f, 0.1f, 3));
+            xuisection4.AddItem(new XUIFloatAdjuster("Homing", XSingleton<XDebug>.Instance.SM[XDebug.CustomSpeedMultiplier.LUASpeedType.Homing], -0.05f, 0.1f, 3));
             xuisection4.AddItem(new XUIFloatAdjuster("H. Attack", XSingleton<XDebug>.Instance.SMHomingAttackFasterBy, -0.05f, 0.1f, 3));
             xuisection4.AddItem(new XUIFloatAdjuster("After H. Rotation", XSingleton<XDebug>.Instance.SMAfterHomingRotation, -0.05f, 0.1f, 3));
             XUISection xuisection5 = this.Menu.AddSection(new XUISection("Boost"));
