@@ -23,6 +23,12 @@ namespace P06X.Helpers
             return ass.GetType("STHLua." + name);
         }
 
+        public static T Set<T>(this Type typeObj, string name, T value)
+        {
+            typeObj.GetField(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)?.SetValue(typeObj, value);
+            return typeObj.Get<T>(name);
+        }
+
         public static T Set<T>(this object obj, string name, T value)
         {
             obj.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)?.SetValue(obj, value);

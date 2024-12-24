@@ -29,6 +29,7 @@ namespace P06X
             UnityEngine.Object.DontDestroyOnLoad(this);
             Application.runInBackground = true;
             XDebug.Comment("only here initializing XValues won't crash");
+            CustomSpeedMultiplier.InitializeOriginalLUA();
             this.InitializeXValues();
         }
         private void Start()
@@ -1482,7 +1483,7 @@ namespace P06X
 
         public XValue<string> TeleportLocation;
 
-        public ArrayByEnum<CustomSpeedMultiplier.LUASpeedType, XValue<float>> SM;
+        public ArrayByEnum<CustomSpeedMultiplier.LUASpeedType, XValue<float>> SM = new ArrayByEnum<CustomSpeedMultiplier.LUASpeedType, XValue<float>>();
         //public XValue<float> SMGround;
 
         //public XValue<float> SMAir;
@@ -1759,10 +1760,9 @@ namespace P06X
 
             public static Dictionary<(string, string, LUASpeedType), float> OriginalSpeedLUAs = new Dictionary<(string, string, LUASpeedType), float>();
 
-            public void InitializeOriginalLUA()
+            public static void InitializeOriginalLUA()
             {
                 var luas = new (string, string, LUASpeedType)[] {
-                    ("Sonic_New_Lua", "c_run_speed_max", LUASpeedType.Ground),
                     ("Sonic_New_Lua", "c_run_speed_max", LUASpeedType.Ground),
                     ("Sonic_New_Lua", "c_jump_run", LUASpeedType.Air),
                     ("Sonic_New_Lua", "c_spindash_spd", LUASpeedType.Spindash),
@@ -1810,8 +1810,8 @@ namespace P06X
 
                 foreach (var (character, lua, type) in luas)
                 {
-                    var originalValue = ass.GetType("STHLUA." + character).Get<float>(lua);
-                    OriginalSpeedLUAs.Add((character, lua, type), originalValue);
+                    var originalValue = ass.GetType("STHLua." + character).Get<float>(lua);
+                    OriginalSpeedLUAs[(character, lua, type)] = originalValue;
                 }
             }
 
@@ -1822,7 +1822,7 @@ namespace P06X
                 {
                     var (character, lua, _) = kv.Key;
                     var originalValue = kv.Value;
-                    ass.GetType("STHLUA." + character).Set<float>(lua, originalValue);
+                    ass.GetType("STHLua." + character).Set<float>(lua, originalValue);
                 }
             }
 
@@ -1834,7 +1834,7 @@ namespace P06X
                 {
                     var (character, lua, speedType) = kv.Key;
                     var originalValue = kv.Value;
-                    ass.GetType("STHLUA." + character).Set<float>(lua, originalValue * XDebug.CustomSpeedMultiplier.ByType[speedType]);
+                    ass.GetType("STHLua." + character).Set<float>(lua, originalValue * XDebug.CustomSpeedMultiplier.ByType[speedType]);
                 }
                 if (recalc_lua)
                 {
@@ -1884,13 +1884,37 @@ namespace P06X
                 Shadow_Lua.c_homing_spd *= XDebug.CustomSpeedMultiplier.Homing;
                 Princess_Lua.c_homing_spd *= XDebug.CustomSpeedMultiplier.Homing;
                 */
+            }
 
+            class LUAWrapper
+            {
+                float Get(string character, string lua)
+                {
+                    Assembly assembly = Assembly.GetAssembly(typeof(SonicNew));
+                    return assembly.GetType("STHLua." + character).Get<float>(lua);
+                }
+                void Set(string character, string lua, float value)
+                {
+                    Assembly assembly = Assembly.GetAssembly(typeof(SonicNew));
+                    assembly.GetType("STHLua." + character).Set<float>(lua, value);
+                }
+
+                // add support for invoking methods:
+                public float Invoke(string character, string lua, object[] args)
+                {
+                    XDebug.Instance.Log("Invoking " + lua + " on " + character);
+                    Assembly assembly = Assembly.GetAssembly(typeof(SonicNew));
+
+                    return (float)assembly.GetType("STHLua." + character).InvokeFunc<float>(lua, args);
+                }
+
+                // implement [] operator for cleaner code
+                public float this[string character, string lua] { get => Get(character, lua); set => Set(character, lua, value); }
             }
 
             private static void RecalcLua()
             {
-                
-                /*
+                /* Similar way as in above functions, use reflection to recalculate values as given below:
                 Sonic_New_Lua.c_run_acc = (Sonic_New_Lua.c_run_speed_max - Sonic_New_Lua.c_walk_speed_max) / Sonic_New_Lua.l_run_acc;
                 Sonic_New_Lua.c_speedup_acc = (Sonic_New_Lua.c_speedup_speed_max - Sonic_New_Lua.c_walk_speed_max) / Sonic_New_Lua.l_speedup_acc;
                 Sonic_New_Lua.c_bound_jump_spd_0 = Common_Lua.HeightToSpeed(Sonic_New_Lua.l_bound_jump_height0);
@@ -1922,6 +1946,42 @@ namespace P06X
                 Tails_Lua.c_run_acc = (Tails_Lua.c_run_speed_max - Tails_Lua.c_walk_speed_max) / Tails_Lua.l_run_acc;
                 Tails_Lua.c_speedup_acc = (Tails_Lua.c_speedup_speed_max - Tails_Lua.c_walk_speed_max) / Tails_Lua.l_speedup_acc;
                 */
+                {
+                    var lw = new LUAWrapper();
+                    lw["Sonic_New_Lua", "c_run_acc"] = (lw["Sonic_New_Lua", "c_run_speed_max"] - lw["Sonic_New_Lua", "c_walk_speed_max"]) / lw["Sonic_New_Lua", "l_run_acc"];
+                    lw["Sonic_New_Lua", "c_speedup_acc"] = (lw["Sonic_New_Lua", "c_speedup_speed_max"] - lw["Sonic_New_Lua", "c_walk_speed_max"]) / lw["Sonic_New_Lua", "l_speedup_acc"];
+                    lw["Sonic_New_Lua", "c_bound_jump_spd_0"] = lw.Invoke("Common_Lua", "HeightToSpeed", new object[] { lw["Sonic_New_Lua", "l_bound_jump_height0"] });
+                    lw["Sonic_New_Lua", "c_bound_jump_spd_1"] = lw.Invoke("Common_Lua", "HeightToSpeed", new object[] { lw["Sonic_New_Lua", "l_bound_jump_height1"] });
+                    lw["Sonic_New_Lua", "c_homing_brake"] = (lw["Sonic_New_Lua", "c_homing_spd"] - lw["Sonic_New_Lua", "c_jump_run_orig"]) / lw["Sonic_New_Lua", "c_homing_time"];
+                    lw["Sonic_Fast_Lua", "c_run_acc"] = (lw["Sonic_Fast_Lua", "c_run_speed_max"] - lw["Sonic_Fast_Lua", "c_walk_speed_max"]) / lw["Sonic_Fast_Lua", "l_run_acc"];
+                    lw["Knuckles_Lua", "c_run_acc"] = (lw["Knuckles_Lua", "c_run_speed_max"] - lw["Knuckles_Lua", "c_walk_speed_max"]) / lw["Knuckles_Lua", "l_run_acc"];
+                    lw["Knuckles_Lua", "c_speedup_acc"] = (lw["Knuckles_Lua", "c_speedup_speed_max"] - lw["Knuckles_Lua", "c_walk_speed_max"]) / lw["Knuckles_Lua", "l_speedup_acc"];
+                    lw["Omega_Lua", "c_run_acc"] = (lw["Omega_Lua", "c_run_speed_max"] - lw["Omega_Lua", "c_walk_speed_max"]) / lw["Omega_Lua", "l_run_acc"];
+                    lw["Omega_Lua", "c_jump_walk"] = lw["Omega_Lua", "l_jump_walk"] / (2f * Mathf.Sqrt(2f * lw["Omega_Lua", "l_jump_hight"] / 9.81f));
+                    lw["Omega_Lua", "c_jump_run"] = lw["Omega_Lua", "l_jump_run"] / (2f * Mathf.Sqrt(2f * lw["Omega_Lua", "l_jump_hight"] / 9.81f));
+                    lw["Omega_Lua", "c_speedup_acc"] = (lw["Omega_Lua", "c_speedup_speed_max"] - lw["Omega_Lua", "c_walk_speed_max"]) / lw["Omega_Lua", "l_speedup_acc"];
+                    lw["Princess_Lua", "c_run_acc"] = (lw["Princess_Lua", "c_run_speed_max"] - lw["Princess_Lua", "c_walk_speed_max"]) / lw["Princess_Lua", "l_run_acc"];
+                    lw["Princess_Lua", "c_jump_walk"] = lw.Invoke("Common_Lua", "HeightAndDistanceToSpeed", new object[] { lw["Princess_Lua", "l_jump_walk"], lw["Princess_Lua", "l_jump_hight"] });
+                    lw["Princess_Lua", "c_speedup_acc"] = (lw["Princess_Lua", "c_speedup_speed_max"] - lw["Princess_Lua", "c_walk_speed_max"]) / lw["Princess_Lua", "l_speedup_acc"];
+                    lw["Princess_Lua", "c_homing_brake"] = (lw["Princess_Lua", "c_homing_spd"] - lw["Princess_Lua", "c_jump_run_orig"]) / lw["Princess_Lua", "c_homing_time"];
+                    lw["Rouge_Lua", "c_run_acc"] = (lw["Rouge_Lua", "c_run_speed_max"] - lw["Rouge_Lua", "c_walk_speed_max"]) / lw["Rouge_Lua", "l_run_acc"];
+                    lw["Rouge_Lua", "c_speedup_acc"] = (lw["Rouge_Lua", "c_speedup_speed_max"] - lw["Rouge_Lua", "c_walk_speed_max"]) / lw["Rouge_Lua", "l_speedup_acc"];
+                    lw["Shadow_Lua", "c_run_acc"] = (lw["Shadow_Lua", "c_run_speed_max"] - lw["Shadow_Lua", "c_walk_speed_max"]) / lw["Shadow_Lua", "l_run_acc"];
+                    lw["Shadow_Lua", "c_speedup_acc"] = (lw["Shadow_Lua", "c_speedup_speed_max"] - lw["Shadow_Lua", "c_walk_speed_max"]) / lw["Shadow_Lua", "l_speedup_acc"];
+                    lw["Shadow_Lua", "c_homing_brake"] = (lw["Shadow_Lua", "c_homing_spd"] - lw["Shadow_Lua", "c_jump_run_orig"]) / lw["Shadow_Lua", "c_homing_time"];
+                    lw["Silver_Lua", "c_run_acc"] = (lw["Silver_Lua", "c_run_speed_max"] - lw["Silver_Lua", "c_walk_speed_max"]) / lw["Silver_Lua", "l_run_acc"];
+                    lw["Silver_Lua", "c_speedup_acc"] = (lw["Silver_Lua", "c_speedup_speed_max"] - lw["Silver_Lua", "c_walk_speed_max"]) / lw["Silver_Lua", "l_speedup_acc"];
+                    lw["Silver_Lua", "c_tele_dash_speed"] = lw["Silver_Lua", "l_tele_dash"] / lw["Silver_Lua", "c_tele_dash_time"];
+                    lw["Silver_Lua", "c_psi_gauge_catch_ride"] = lw["Silver_Lua", "psi_power"] / lw["Silver_Lua", "l_psi_gauge_catch_ride"];
+                    lw["Silver_Lua", "c_psi_gauge_float"] = lw["Silver_Lua", "psi_power"] / (lw["Silver_Lua", "l_psi_gauge_float"] / (lw["Silver_Lua", "c_float_walk_speed"] / 1.85f));
+                    lw["Silver_Lua", "c_psi_gauge_teleport_dash_burn"] = lw["Silver_Lua", "psi_power"] / (lw["Silver_Lua", "l_psi_gauge_float"] / (lw["Silver_Lua", "c_float_walk_speed"] / 2f));
+                    lw["Sonic_Fast_Lua", "c_run_acc"] = (lw["Sonic_Fast_Lua", "c_run_speed_max"] - lw["Sonic_Fast_Lua", "c_walk_speed_max"]) / lw["Sonic_Fast_Lua", "l_run_acc"];
+                    lw["Tails_Lua", "c_run_acc"] = (lw["Tails_Lua", "c_run_speed_max"] - lw["Tails_Lua", "c_walk_speed_max"]) / lw["Tails_Lua", "l_run_acc"];
+                    lw["Tails_Lua", "c_speedup_acc"] = (lw["Tails_Lua", "c_speedup_speed_max"] - lw["Tails_Lua", "c_walk_speed_max"]) / lw["Tails_Lua", "l_speedup_acc"];
+                }
+
+                // xdebug log that recalc succeeded
+                XSingleton<XDebug>.Instance.Log("LUA recalculated", 1.5f, 18f);
             }
         }
 
