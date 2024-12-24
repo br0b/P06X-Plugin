@@ -118,6 +118,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="XKnuckles.cs" />
     <Compile Include="XPlayerBase.cs" />
     <Compile Include="XSonicNew.cs" />
     <Compile Include="XSplashScreens.cs" />
