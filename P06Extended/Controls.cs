@@ -1902,10 +1902,9 @@ namespace P06X
                 // add support for invoking methods:
                 public float Invoke(string character, string lua, object[] args)
                 {
-                    XDebug.Instance.Log("Invoking " + lua + " on " + character);
                     Assembly assembly = Assembly.GetAssembly(typeof(SonicNew));
 
-                    return (float)assembly.GetType("STHLua." + character).InvokeFunc<float>(lua, args);
+                    return (float)assembly.GetType("STHLua." + character).InvokeStaticMethod<float>(lua, args);
                 }
 
                 // implement [] operator for cleaner code

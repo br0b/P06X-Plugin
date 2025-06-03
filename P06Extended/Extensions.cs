@@ -53,13 +53,31 @@ namespace P06X.Helpers
 
         public static T InvokeFunc<T>(this object obj, string methodName, params object[] args)
         {
-            MethodInfo method = obj.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
-            if (method != null)
-            {
-                return (T)method.Invoke(obj, args);
-            }
+            MethodInfo method = obj.GetType().GetMethod(
+               methodName,
+               BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+               null,
+               args.Select(a => a.GetType()).ToArray(),
+               null);
 
-            return default(T);
+            if (method == null)
+                throw new Exception($"Method '{methodName}' not found on type '{obj.GetType().FullName}'");
+
+            return (T)method.Invoke(obj, args);
+        }
+
+        public static T InvokeStaticMethod<T>(this Type type, string methodName, params object[] args)
+        {
+            var argTypes = args.Select(a => a.GetType()).ToArray();
+
+            var method = type.GetMethod(
+                methodName,
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                argTypes,
+                null) ?? throw new Exception($"Method '{methodName}' not found on type '{type.FullName}'");
+
+            return (T)method.Invoke(null, args); // null for static method
         }
 
         public static bool IsInList<T>(this T obj, params T[] values)
