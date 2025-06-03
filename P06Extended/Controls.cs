@@ -400,7 +400,8 @@ namespace P06X
                 Application.targetFrameRate = 60;
             }
             XDebug.Comment("check mod files integrity");
-            if (scene.name == "MainMenu" && XSingleton<XFiles>.Instance.Check())
+            // no longer need to check the p06 version, since we have a plugin mod
+            if (scene.name == "MainMenu" /*&& XSingleton<XFiles>.Instance.Check()*/) 
             {
                 XSingleton<XFiles>.Instance.Load();
             }
@@ -1431,7 +1432,7 @@ namespace P06X
 
         private float RealFixedDeltaTime;
 
-        public static readonly string P06X_VERSION = "1.8.0a";
+        public static readonly string P06X_VERSION = XCommon.Version;
 
         private float SpeedMultiplier;
 
