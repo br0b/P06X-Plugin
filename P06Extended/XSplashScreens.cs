@@ -28,7 +28,7 @@ namespace P06X
 
                 if (skipMenu && Time.time - startTime >= 0.1f)
                 {
-                    string path = XCommon.ModFilesPath + "/next_area.txt";
+                    string path = XCommon.ModFilesPath + "next_area.txt";
                     try
                     {
                         string[] array = System.IO.File.ReadAllLines(path);

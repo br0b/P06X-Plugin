@@ -8,7 +8,7 @@ namespace P06X
     {
         public static bool Dbg = false;
         public static string Version = "2.0.beta";
-        public static string ModFilesPath = Application.dataPath + "/../Plugins/P06Extended";
+        public static string ModFilesPath = Application.dataPath + "/../Plugins/P06X/";
 
         public static void TeleportToSection(string section)
         {

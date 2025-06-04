@@ -405,6 +405,8 @@ namespace P06X
             {
                 XSingleton<XFiles>.Instance.Load();
             }
+            if(scene.name == "MainMenu")
+                XSingleton<XDebug>.Instance.Log("P-06<color=#00ee00>X</color>" + XDebug.P06X_VERSION + " Plugin by 4ndrelus", 20f, 13.8f);
             XDebug.Comment("custom music check and update");
             if (this.PlayCustomMusic.Value)
             {
@@ -985,7 +987,7 @@ namespace P06X
                     }
                 }
             }
-            XUtility.SerializeObjectToXml<List<ValueTuple<string, object>>>(list, Application.dataPath + "\\mods\\user_settings.xml");
+            XUtility.SerializeObjectToXml<List<ValueTuple<string, object>>>(list, XCommon.ModFilesPath + "user_settings.xml");
             this.Dump(list);
             this.Log("Settings <color=#00ee00>saved</color>", 1.5f, 18f);
         }
@@ -1022,7 +1024,7 @@ namespace P06X
                 }
                 if (Input.GetKeyDown(KeyCode.F5))
                 {
-                    string[] array = File.ReadAllLines(Application.dataPath + "/mods/next_area.txt");
+                    string[] array = File.ReadAllLines(XCommon.ModFilesPath + "next_area.txt");
                     this.TeleportToSection(array[0]);
                 }
                 if (Input.GetKeyDown(KeyCode.F4))
@@ -1274,11 +1276,11 @@ namespace P06X
 
         public Dictionary<string, object> GetSettingsDict()
         {
-            if (!File.Exists(Application.dataPath + "\\mods\\user_settings.xml"))
+            if (!File.Exists(XCommon.ModFilesPath + "user_settings.xml"))
             {
                 return null;
             }
-            List<ValueTuple<string, object>> list = XUtility.DeserializeXmlToObject<List<ValueTuple<string, object>>>(Application.dataPath + "\\mods\\user_settings.xml");
+            List<ValueTuple<string, object>> list = XUtility.DeserializeXmlToObject<List<ValueTuple<string, object>>>(XCommon.ModFilesPath + "user_settings.xml");
             if (list != null)
             {
                 this.Dump(list);
@@ -2454,7 +2456,7 @@ namespace P06X
                 XDebug.Comment("========= rend =========");
                 ParticleSystemRenderer component = this.StompTornadoFXPrefab.GetComponent<ParticleSystemRenderer>();
                 Material material = new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended Premultiply"));
-                material.mainTexture = XFiles.LoadPNG(Application.dataPath + "/mods/Particle.png");
+                material.mainTexture = XFiles.LoadPNG(XCommon.ModFilesPath + "Particle.png");
                 component.material = material;
                 component.trailMaterial = material;
                 Light light = new GameObject("The Light").AddComponent<Light>();
@@ -2622,7 +2624,7 @@ namespace P06X
                 XDebug.Comment("========= rend =========");
                 ParticleSystemRenderer component = this.StompTornadoShadowFXPrefab.GetComponent<ParticleSystemRenderer>();
                 Material material = new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended Premultiply"));
-                material.mainTexture = XFiles.LoadPNG(Application.dataPath + "/mods/Particle.png");
+                material.mainTexture = XFiles.LoadPNG(XCommon.ModFilesPath + "Particle.png");
                 component.material = material;
                 component.trailMaterial = material;
                 Light light = new GameObject("The Light").AddComponent<Light>();
@@ -2852,11 +2854,11 @@ namespace P06X
 
         public bool Check()
         {
-            if (!Directory.Exists(this.Mods))
+            if (!Directory.Exists(XCommon.ModFilesPath))
             {
-                Directory.CreateDirectory(this.Mods);
+                Directory.CreateDirectory(XCommon.ModFilesPath);
             }
-            string text = this.Mods + "xconfig.ini";
+            string text = XCommon.ModFilesPath + "xconfig.ini";
             if (!File.Exists(text))
             {
                 File.WriteAllLines(text, new string[]
@@ -2911,9 +2913,9 @@ namespace P06X
                 }
             }
             string text3 = null;
-            foreach (string text4 in this.Required)
+            foreach (string text4 in Required)
             {
-                if (!File.Exists(Application.dataPath + "/mods/" + text4))
+                if (!File.Exists(XCommon.ModFilesPath + text4))
                 {
                     text3 = text4;
                     break;
@@ -2922,7 +2924,7 @@ namespace P06X
             XDebug.Comment("1 -> 1");
             if (text2 == "1" && text3 == null)
             {
-                XSingleton<XDebug>.Instance.Log("P-06<color=#00ee00>X</color>" + XDebug.P06X_VERSION + " by 4ndrelus for Version 4.6", 3f, 13.8f);
+                XSingleton<XDebug>.Instance.Log("P-06<color=#00ee00>X</color>" + XDebug.P06X_VERSION + " Plugin by 4ndrelus", 3f, 13.8f);
             }
             XDebug.Comment("0 -> 1");
             if (text2 == "0" && text3 == null)
@@ -2991,22 +2993,16 @@ namespace P06X
 
         private IEnumerator LoadOGG2(Action<AudioClip> action, string filename)
         {
-            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(this.Mods + filename, AudioType.OGGVORBIS))
+            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(XCommon.ModFilesPath + filename, AudioType.OGGVORBIS))
             {
                 yield return www.SendWebRequest();
                 action(DownloadHandlerAudioClip.GetContent(www));
             }
         }
 
-        public XFiles()
-        {
-            this.Mods = Application.dataPath + "/mods/";
-            this.Required = new string[] { "Particle.png", "custom_music.ogg", "stomp_land.ogg", "ring.ogg" };
-        }
-
         private IEnumerator LoadAll_C()
         {
-            this.Particle = XFiles.LoadPNG(this.Mods + "Particle.png");
+            this.Particle = XFiles.LoadPNG(XCommon.ModFilesPath + "Particle.png");
             yield return base.StartCoroutine(this.LoadOGG2(delegate (AudioClip clip)
             {
                 this.Gandalf = clip;
@@ -3033,7 +3029,7 @@ namespace P06X
         public IEnumerator LoadMp3(Action<AudioClip> action, string filename)
         {
             XDebug.Comment("THIS IS BROKEN currently");
-            string text = string.Format("file://{0}", this.Mods + filename);
+            string text = string.Format("file://{0}", XCommon.ModFilesPath + filename);
             WWW www = new WWW(text);
             yield return www;
             AudioClip audioClip = www.GetAudioClip(false, false, AudioType.MPEG);
@@ -3054,9 +3050,7 @@ namespace P06X
             return text;
         }
 
-        public string Mods;
-
-        public string[] Required;
+        public static string[] Required = new string[] { "Particle.png", "custom_music.ogg", "stomp_land.ogg", "ring.ogg" };
 
         private static XFiles _instance;
 
